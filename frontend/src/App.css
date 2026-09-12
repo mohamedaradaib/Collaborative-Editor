@@ -1,0 +1,203 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Roboto", "sans-serif";
+  background: #f0f2f5;
+  color: #333;
+}
+
+.join-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: radial-gradient(circle at top left, #1f3b55 0%, #101820 55%, #081018 100%);
+
+  .join-form {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 300px;
+
+    h1 {
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+
+      &:hover {
+        background-color: #357abd;
+      }
+    }
+  }
+}
+
+.editor-container {
+  display: flex;
+  height: 100vh;
+
+  .sidebar {
+    width: 250px;
+    padding: 1.5rem;
+    background-color: #1f3b55;
+    color: #ecf0f1;
+
+    .room-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 1rem;
+
+      h2 {
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+      }
+    }
+
+    h3 {
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+    ul {
+      list-style: none;
+      li {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+        background: gray;
+        margin-top: 5px;
+        border-radius: 5px;
+      }
+    }
+
+    .typing-indicator {
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: white;
+    }
+
+    .language-selector {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.5rem;
+      background-color: #34495e;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .leave-button {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+
+      &:hover {
+        background-color: #ab2a1c;
+      }
+    }
+
+    .run-btn {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.75rem;
+      background-color: rgb(12, 209, 38);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+
+      &:hover {
+        background-color: #0aa326;
+      }
+
+      &:focus {
+        background-color: #087f1d;
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
+      
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 1rem;
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #bdc3c7;
+    }
+  }
+
+  .editor-wrapper {
+    flex-grow: 1;
+    background-color: #fff;
+  }
+}
+
+.output-console {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 20px;
+  height: 200px;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  box-sizing: border-box;
+  resize: none;
+}
+
+.input-console {
+  width: 100%;
+  height: 80px;
+  margin-top: 10px;
+  padding: 10px;
+  font-family: monospace;
+  background-color: #1e1e1e;
+  color: white;
+  border: 0;
+  box-sizing: border-box;
+  resize: none;
+}
+
+.input-console:focus,
+.output-console:focus {
+  outline: none;
+  border: 0;
+  box-shadow: none;
+}
