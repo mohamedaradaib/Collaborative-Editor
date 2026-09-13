@@ -2,12 +2,12 @@
 A real-time, browser-based collobarative development environment that allows multiple developers to write, edit, and debug code simultaneously.
 
 ## Tech Stack
-- Javascript - Programming Language
-- HTML - 
-- CSS
-- React 
-- Node.js 
-- Express.js
+- Javascript - Programming language
+- HTML - Markup language
+- CSS - Stylesheet language
+- React - Frontend JavaScript Library 
+- Node.js - Backend JavaScript Runtime Environment
+- Express.js - Backend JavaScript Framework
 
 ## Getting Started
 
