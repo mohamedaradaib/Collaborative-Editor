@@ -14,8 +14,8 @@ A real-time, browser-based collobarative development environment that allows mul
 ### Installation
 1. **Clone the repository:**
    ```bash
-     git clone [https://github.com](https://github.com/mohamedaradaib/Collaborative-Editor.git)
-     cd collobarative-editor
+   git clone [https://github.com](https://github.com/mohamedaradaib/Collaborative-Editor.git)
+   cd collobarative-editor
    ```
 
 2. **Set up the Backend:**
@@ -31,11 +31,11 @@ A real-time, browser-based collobarative development environment that allows mul
    cd client
    npm install
    npm run dev
-      ```
+   ```
 
 4. **Open the app:**
    *Navigate to the local URL provider
 
 ## License
-Distrubuted under the MIT License. See 'LICENSE' for more information.
+Distrubuted under the MIT License. See `LICENSE` for more information.
   
