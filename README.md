@@ -35,6 +35,7 @@ The frontend provides the editor interface, while the backend manages communicat
 1. Clone the repository:
 ```bash
 git clone https://github.com/mohamedaradaib/Collaborative-Editor.git
+cd Collaborative-Editor
 ```
 
 2. Install backend dependencies:
