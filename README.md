@@ -50,7 +50,7 @@ cd frontend
 npm install
 ```
 
-### Running the App
+### Running the Application
 
 Open two terminals.
 
