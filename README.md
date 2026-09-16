@@ -49,17 +49,17 @@ cd frontend
 npm install
 ```
 
-## Running the App
+### Running the App
 
 Open two terminals.
 
-### Terminal 1: Start the backend
+#### Terminal 1: Start the backend
 ```bash
-cd /Collaborative-Editor
+cd Collaborative-Editor/backend
 npm run start
 ```
 
-### Terminal 2: Start the frontend
+#### Terminal 2: Start the frontend
 ```bash
 cd Collaborative-Editor/frontend
 npm run dev -- --host 0.0.0.0
