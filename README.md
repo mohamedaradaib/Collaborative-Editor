@@ -25,11 +25,12 @@ A real-time collaborative coding platform that allows multiple users to join the
 ## How It Works
 The frontend provides the editor interface, while the backend manages communication between connected clients. When a user joins a room, the server stores that user and broadcasts the current code state to everyone in the room. As code changes are made, they are sent over Socket.IO so all users stay synchronized. The app also supports code execution by sending the current code to an external execution service and returning the output.
 
-## Prerequisites
+## Getting Started
+### Prerequisites
 - Node.js 18+
 - npm
 
-## Installation
+### Installation
 
 1. Clone the repository:
 ```bash
