@@ -1,45 +1,75 @@
 # Collaborative Editor
-A real-time, browser-based collobarative development environment that allows multiple developers to write, edit, and debug code simultaneously.
+
+A real-time collaborative coding platform that allows multiple users to join the same room and work on code together in the browser.
+
+## Features
+- Real-time collaborative editing
+- Shared room-based sessions
+- Active user tracking
+- Code execution feedback
+- Support for editor interactions and language updates
 
 ## Tech Stack
-- Javascript - Programming language
-- HTML - Markup language
-- CSS - Stylesheet language
-- React - Frontend JavaScript Library 
-- Node.js - Backend JavaScript Runtime Environment
-- Express.js - Backend JavaScript Framework
+- JavaScript
+- HTML
+- CSS
+- React
+- Vite
+- Node.js
+- Express.js
+- Socket.IO
+- Monaco Editor
+- Axios
+- UUID
 
-## Getting Started
+## How It Works
+The frontend provides the editor interface, while the backend manages communication between connected clients. When a user joins a room, the server stores that user and broadcasts the current code state to everyone in the room. As code changes are made, they are sent over Socket.IO so all users stay synchronized. The app also supports code execution by sending the current code to an external execution service and returning the output.
 
-### Installation
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com](https://github.com/mohamedaradaib/Collaborative-Editor.git)
-   ```
+## Prerequisites
+- Node.js 18+
+- npm
 
-2. **Go into the Directory:**
-   ```bash
-   cd Colloborative-Editor
-   ```
+## Installation
 
-3. **Set up the Backend:**
-  ```bash
-  cd server
-  npm install
-  npm start
-  ```
-  
-4. **Set up the Frontend:**
-   Open a new terminal window or tab.
-   ```bash
-   cd client
-   npm install
-   npm run dev
-   ```
+1. Clone the repository:
+```bash
+git clone https://github.com/mohamedaradaib/Collaborative-Editor.git
+cd Collaborative-Editor
+```
 
-5. **Open the app:**
-   Navigate to the local URL provider
+2. Install backend dependencies:
+```bash
+cd backend
+npm install
+```
+
+3. Install frontend dependencies:
+```bash
+cd frontend
+npm install
+```
+
+## Running the App
+
+Open two terminals.
+
+### Terminal 1: Start the backend
+```bash
+cd /Collaborative-Editor
+npm run start
+```
+
+### Terminal 2: Start the frontend
+```bash
+cd Collaborative-Editor/frontend
+npm run dev -- --host 0.0.0.0
+```
+
+Then open:
+- http://localhost:5173
+
+## Live Demo
 
 ## License
-Distrubuted under the MIT License. See `LICENSE` for more information.
-  
+Distributed under the MIT License.
+
