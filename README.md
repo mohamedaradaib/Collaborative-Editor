@@ -72,5 +72,5 @@ Then open:
 ## Live Demo
 
 ## License
-Distributed under the MIT License.
+MIT License.
 
