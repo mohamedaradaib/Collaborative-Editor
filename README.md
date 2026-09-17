@@ -72,5 +72,5 @@ Then open:
 ## Live Demo
 
 ## License
-MIT License.
+[LICENSE](./LICENSE)
 
