@@ -66,8 +66,7 @@ cd Collaborative-Editor/frontend
 npm run dev -- --host 0.0.0.0
 ```
 
-Then open:
-- http://localhost:5173
+Open the Vite localhost URL - `http://localhost:5173`
 
 ## Live Demo
 
