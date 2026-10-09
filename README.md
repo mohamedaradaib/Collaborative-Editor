@@ -1,9 +1,9 @@
-# Collaborative Editor
+# Collaborative IDE
 
-A real-time collaborative coding platform that allows multiple users to join the same room and work on code together in the browser.
+A real-time collaborative development environment that allows multiple users to join the same room and work on code together in the browser.
 
 ## Features
-- Real-time collaborative editing
+- Real-time collaborative coding
 - Shared room-based sessions
 - Active user tracking
 - Code execution feedback
@@ -28,14 +28,13 @@ The frontend provides the editor interface, while the backend manages communicat
 ## Getting Started
 ### Prerequisites
 - Node.js 18+
-- npm
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/mohamedaradaib/Collaborative-Editor.git
-cd Collaborative-Editor
+git clone https://github.com/mohamedaradaib/Collaborative-IDE.git
+cd Collaborative-IDE
 ```
 
 2. Install backend dependencies:
@@ -56,13 +55,13 @@ Open two terminals.
 
 #### Terminal 1: Start the backend
 ```bash
-cd Collaborative-Editor/backend
+cd Collaborative-IDE/backend
 npm run start
 ```
 
 #### Terminal 2: Start the frontend
 ```bash
-cd Collaborative-Editor/frontend
+cd Collaborative-IDE/frontend
 npm run dev -- --host 0.0.0.0
 ```
 
