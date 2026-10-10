@@ -282,10 +282,6 @@ const App = () => {
         <button className="leave-button" onClick={leaveRoom}>
           Exit
         </button>
-
-        <div className="footer">
-          <p>Collaborative Editor</p>
-        </div>
       </div>
 
       <div className="editor-wrapper">
