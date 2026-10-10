@@ -1,0 +1,9 @@
+{
+  "name": "collaborative-editor-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  }
+}

@@ -10,14 +10,18 @@ import Database from "better-sqlite3";
 const app = express();
 
 const server = http.createServer(app);
+const allowedOrigins = process.env.CLIENT_ORIGIN
+  ? process.env.CLIENT_ORIGIN.split(",").map((origin) => origin.trim())
+  : ["http://localhost:5173"];
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: allowedOrigins,
   },
 });
 
 const rooms = new Map();
+const allowedLanguages = new Set(["javascript", "python", "java"]);
 const backendDirectory = path.dirname(fileURLToPath(import.meta.url));
 const databasePath =
   process.env.DATABASE_PATH ||
@@ -48,14 +52,24 @@ io.on("connection", (socket) => {
   let currentRoom = null;
   let currentUser = null;
 
-  socket.on("join", ({ roomId, userName }) => {
+  socket.on("join", (payload = {}, acknowledge) => {
+    const roomId = typeof payload.roomId === "string" ? payload.roomId.trim() : "";
+    const userName = typeof payload.userName === "string" ? payload.userName.trim() : "";
+
+    if (!roomId || roomId.length > 128 || !userName || userName.length > 40) {
+      acknowledge?.({
+        error: "Enter a room name and username within the allowed length.",
+      });
+      return;
+    }
+
     if (currentRoom) {
       socket.leave(currentRoom);
-      rooms.get(currentRoom).users.delete(currentUser);
-      io.to(currentRoom).emit(
-        "userJoined",
-        Array.from(rooms.get(currentRoom).users)
-      );
+      const previousRoom = rooms.get(currentRoom);
+      previousRoom?.users.delete(currentUser);
+      if (previousRoom) {
+        io.to(currentRoom).emit("userJoined", Array.from(previousRoom.users));
+      }
     }
 
     currentRoom = roomId;
@@ -73,23 +87,26 @@ io.on("connection", (socket) => {
     socket.emit("codeUpdate", rooms.get(roomId).code);
 
     io.to(roomId).emit("userJoined", Array.from(rooms.get(currentRoom).users));
+    acknowledge?.({ ok: true });
   });
 
-  socket.on("codeChange", ({ roomId, code }) => {
-    if (rooms.has(roomId)) {
-      rooms.get(roomId).code = code;
-      saveDocument.run(roomId, code);
+  socket.on("codeChange", (payload = {}) => {
+    if (!currentRoom || typeof payload.code !== "string" || payload.code.length > 500_000) {
+      return;
     }
-    socket.to(roomId).emit("codeUpdate", code);
+
+    rooms.get(currentRoom).code = payload.code;
+    saveDocument.run(currentRoom, payload.code);
+    socket.to(currentRoom).emit("codeUpdate", payload.code);
   });
 
   socket.on("leaveRoom", () => {
     if (currentRoom && currentUser) {
-      rooms.get(currentRoom).users.delete(currentUser);
-      io.to(currentRoom).emit(
-        "userJoined",
-        Array.from(rooms.get(currentRoom).users)
-      );
+      const room = rooms.get(currentRoom);
+      room?.users.delete(currentUser);
+      if (room) {
+        io.to(currentRoom).emit("userJoined", Array.from(room.users));
+      }
 
       socket.leave(currentRoom);
 
@@ -98,19 +115,32 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("typing", ({ roomId, userName }) => {
-    socket.to(roomId).emit("userTyping", userName);
+  socket.on("typing", () => {
+    if (currentRoom && currentUser) {
+      socket.to(currentRoom).emit("userTyping", currentUser);
+    }
   });
 
-  socket.on("languageChange", ({ roomId, language }) => {
-    io.to(roomId).emit("languageUpdate", language);
+  socket.on("languageChange", (payload = {}) => {
+    if (currentRoom && allowedLanguages.has(payload.language)) {
+      io.to(currentRoom).emit("languageUpdate", payload.language);
+    }
   });
 
   socket.on(
     "compileCode",
-    async ({ code, roomId, language, version, input }) => {
-      if (rooms.has(roomId)) {
-        const room = rooms.get(roomId);
+    async (payload = {}) => {
+      const { code, language, version, input } = payload;
+      const roomId = currentRoom;
+      if (
+        roomId &&
+        typeof code === "string" &&
+        code.length <= 100_000 &&
+        allowedLanguages.has(language) &&
+        typeof version === "string" &&
+        typeof input === "string" &&
+        input.length <= 100_000
+      ) {
         const response = await axios.post(
           "https://emkc.org/api/v2/piston/execute",
           {
@@ -122,10 +152,10 @@ io.on("connection", (socket) => {
               },
             ],
             stdin: input,
-          }
+          },
+          { timeout: 15_000 }
         );
 
-        room.output = response.data.run.output;
         io.to(roomId).emit("codeResponse", response.data);
       }
     }
@@ -133,11 +163,11 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     if (currentRoom && currentUser) {
-      rooms.get(currentRoom).users.delete(currentUser);
-      io.to(currentRoom).emit(
-        "userJoined",
-        Array.from(rooms.get(currentRoom).users)
-      );
+      const room = rooms.get(currentRoom);
+      room?.users.delete(currentUser);
+      if (room) {
+        io.to(currentRoom).emit("userJoined", Array.from(room.users));
+      }
     }
     console.log("Disconnected", socket.id);
   });
@@ -145,14 +175,14 @@ io.on("connection", (socket) => {
 
 const port = process.env.PORT || 5000;
 
-const __dirname = path.resolve();
+const projectDirectory = path.resolve(backendDirectory, "..");
 
-app.use(express.static(path.join(__dirname, "/frontend/dist")));
+app.use(express.static(path.join(projectDirectory, "frontend", "dist")));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend", "dist", "index.html"));
+  res.sendFile(path.join(projectDirectory, "frontend", "dist", "index.html"));
 });
 
 server.listen(port, () => {
-  console.log("server listening on port 5000");
+  console.log(`server listening on port ${port}`);
 });

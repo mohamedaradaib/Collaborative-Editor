@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import io from "socket.io-client";
 import Editor from "@monaco-editor/react";
-import { v4 as uuid } from "uuid";
 
-const socket = io("http://localhost:5000");
+const socketUrl =
+  import.meta.env.VITE_SERVER_URL ||
+  (import.meta.env.DEV ? "http://localhost:5000" : window.location.origin);
+const socket = io(socketUrl);
 
 const App = () => {
   const [joined, setJoined] = useState(false);
@@ -15,7 +17,8 @@ const App = () => {
   const [users, setUsers] = useState([]);
   const [typing, setTyping] = useState("");
   const [outPut, setOutPut] = useState("");
-  const [version, setVersion] = useState("*");
+  const version = "*";
+  const [joinError, setJoinError] = useState("");
 
   useEffect(() => {
     socket.on("userJoined", (users) => {
@@ -62,8 +65,14 @@ const App = () => {
 
   const joinRoom = () => {
     if (roomId && userName) {
-      socket.emit("join", { roomId, userName });
-      setJoined(true);
+      setJoinError("");
+      socket.emit("join", { roomId, userName }, (response) => {
+        if (response?.ok) {
+          setJoined(true);
+        } else {
+          setJoinError(response?.error || "Unable to join this room.");
+        }
+      });
     }
   };
 
@@ -117,6 +126,7 @@ const App = () => {
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
             />
+            {joinError && <p role="alert">{joinError}</p>}
             <button onClick={joinRoom}>Enter</button>
           </div>
         </div>
