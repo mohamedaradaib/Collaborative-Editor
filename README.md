@@ -5,8 +5,7 @@ A browser-based collaborative code editor where multiple users can join a room a
 ## Features
 - Real-time collaborative editing with concurrent changes merged automatically
 - Room-based sessions with active user presence and typing indicators
-- Shared language selection for JavaScript, Python, and Java
-- Code execution with standard input and output
+- Shared JavaScript editor with code execution, standard input, and output
 - Persistent room source code and language settings
 
 ## Tech Stack
@@ -24,7 +23,7 @@ A browser-based collaborative code editor where multiple users can join a room a
 - Piston API
 
 ## How It Works
-The frontend binds Monaco Editor to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates, language changes, and room presence between connected users. The backend stores each room's source code and language in SQLite. When a user runs code, the backend sends the source and standard input to the external Piston service and returns the result to the room. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive code. Code execution is limited to one run every two seconds per connected client.
+The frontend binds Monaco Editor to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates, language settings, and room presence between connected users. The backend stores each room's source code and language in SQLite. When a user runs code, the backend sends the JavaScript source and standard input to the external Piston service and broadcasts the result to the room. Code execution is limited to one run every two seconds per connected client. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive code, and only deploy this application where you trust the users who can access it.
 
 ## Getting Started
 ### Prerequisites
@@ -58,7 +57,7 @@ npm start
 npm --prefix frontend run dev -- --host 0.0.0.0
 ```
 
-Open the Vite localhost URL - `http://localhost:5173`
+Open `http://localhost:5173`
 
 ## Live Demo
 

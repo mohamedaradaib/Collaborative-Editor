@@ -12,7 +12,7 @@ const app = express();
 const server = http.createServer(app);
 const allowedOrigins = process.env.CLIENT_ORIGIN
   ? process.env.CLIENT_ORIGIN.split(",").map((origin) => origin.trim())
-  : ["http://localhost:5173"];
+  : ["http://localhost:5173", "http://127.0.0.1:5173"];
 
 const io = new Server(server, {
   cors: {
@@ -21,7 +21,7 @@ const io = new Server(server, {
 });
 
 const rooms = new Map();
-const allowedLanguages = new Set(["javascript", "python", "java"]);
+const allowedLanguages = new Set(["javascript"]);
 const backendDirectory = path.dirname(fileURLToPath(import.meta.url));
 const databasePath =
   process.env.DATABASE_PATH ||
@@ -70,7 +70,9 @@ const createRoom = (savedDocument) => {
   return {
     users: new Set(),
     doc,
-    language: savedDocument?.language ?? "javascript",
+    language: allowedLanguages.has(savedDocument?.language)
+      ? savedDocument.language
+      : "javascript",
   };
 };
 

@@ -289,8 +289,6 @@ const App = () => {
           onChange={handleLanguageChange}
         >
           <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-          <option value="java">Java</option>
         </select>
         <button className="run-btn" onClick={runCode} disabled={runCooldown}>
           {runCooldown ? "Wait..." : "Run"}
