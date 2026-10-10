@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import io from "socket.io-client";
 import Editor from "@monaco-editor/react";
+import * as Y from "yjs";
 
 const socketUrl =
   import.meta.env.VITE_SERVER_URL ||
@@ -21,15 +22,28 @@ const App = () => {
   const [runCooldown, setRunCooldown] = useState(false);
   const version = "*";
   const [joinError, setJoinError] = useState("");
+  const ydocRef = useRef(null);
+  const bindingRef = useRef(null);
+  const textObserverRef = useRef(null);
+  const updateHandlerRef = useRef(null);
 
   useEffect(() => {
     socket.on("userJoined", (users) => {
       setUsers(users);
     });
 
-    socket.on("codeUpdate", (newCode) => {
-      setCode(newCode);
-    });
+    const applyDocumentUpdate = (update) => {
+      if (ydocRef.current && update instanceof Uint8Array) {
+        try {
+          Y.applyUpdate(ydocRef.current, update, "socket");
+        } catch {
+          setJoinError("Received an invalid document update.");
+        }
+      }
+    };
+
+    socket.on("documentState", applyDocumentUpdate);
+    socket.on("documentUpdate", applyDocumentUpdate);
 
     socket.on("userTyping", (user) => {
       setTyping(`${user.slice(0, 8)}... is Typing`);
@@ -49,7 +63,8 @@ const App = () => {
 
     return () => {
       socket.off("userJoined");
-      socket.off("codeUpdate");
+      socket.off("documentState", applyDocumentUpdate);
+      socket.off("documentUpdate", applyDocumentUpdate);
       socket.off("userTyping");
       socket.off("languageUpdate");
       socket.off("codeResponse");
@@ -72,28 +87,138 @@ const App = () => {
   const joinRoom = () => {
     if (roomId && userName) {
       setJoinError("");
+
+      const sharedDoc = new Y.Doc();
+      const source = sharedDoc.getText("source");
+      const handleTextChange = () => setCode(source.toString());
+      const handleDocumentUpdate = (update, origin) => {
+        if (origin !== "socket") {
+          socket.emit("documentUpdate", { update });
+          socket.emit("typing");
+        }
+      };
+
+      source.observe(handleTextChange);
+      sharedDoc.on("update", handleDocumentUpdate);
+      ydocRef.current = sharedDoc;
+      textObserverRef.current = handleTextChange;
+      updateHandlerRef.current = handleDocumentUpdate;
+
       socket.emit("join", { roomId, userName }, (response) => {
         if (response?.ok) {
           setJoined(true);
         } else {
+          source.unobserve(handleTextChange);
+          sharedDoc.off("update", handleDocumentUpdate);
+          sharedDoc.destroy();
+          ydocRef.current = null;
+          textObserverRef.current = null;
+          updateHandlerRef.current = null;
           setJoinError(response?.error || "Unable to join this room.");
         }
       });
     }
   };
 
+  const disposeSharedDocument = () => {
+    bindingRef.current?.();
+    bindingRef.current = null;
+
+    const sharedDoc = ydocRef.current;
+    if (sharedDoc) {
+      const source = sharedDoc.getText("source");
+      if (textObserverRef.current) {
+        source.unobserve(textObserverRef.current);
+      }
+      if (updateHandlerRef.current) {
+        sharedDoc.off("update", updateHandlerRef.current);
+      }
+      sharedDoc.destroy();
+    }
+
+    ydocRef.current = null;
+    textObserverRef.current = null;
+    updateHandlerRef.current = null;
+  };
+
   const leaveRoom = () => {
     socket.emit("leaveRoom");
+    disposeSharedDocument();
     setJoined(false);
     setRoomId("");
     setUserName("");
     setLanguage("javascript");
+    setCode("");
   };
 
-  const handleCodeChange = (newCode) => {
-    setCode(newCode);
-    socket.emit("codeChange", { roomId, code: newCode });
-    socket.emit("typing", { roomId, userName });
+  const handleEditorMount = (editor) => {
+    const sharedDoc = ydocRef.current;
+    const model = editor.getModel();
+    if (!sharedDoc || !model) return;
+
+    const source = sharedDoc.getText("source");
+    const editorOrigin = {};
+    let applyingRemoteUpdate = false;
+
+    const handleModelChange = ({ changes }) => {
+      if (applyingRemoteUpdate) return;
+
+      sharedDoc.transact(() => {
+        [...changes]
+          .sort((left, right) => right.rangeOffset - left.rangeOffset)
+          .forEach(({ rangeOffset, rangeLength, text }) => {
+            if (rangeLength > 0) source.delete(rangeOffset, rangeLength);
+            if (text) source.insert(rangeOffset, text);
+          });
+      }, editorOrigin);
+    };
+
+    const handleSharedTextChange = (event) => {
+      if (event.transaction.origin === editorOrigin) return;
+
+      applyingRemoteUpdate = true;
+      try {
+        let index = 0;
+        event.delta.forEach((operation) => {
+          if (operation.retain !== undefined) {
+            index += operation.retain;
+          } else if (operation.insert !== undefined) {
+            const position = model.getPositionAt(index);
+            model.applyEdits([{
+              range: {
+                startLineNumber: position.lineNumber,
+                startColumn: position.column,
+                endLineNumber: position.lineNumber,
+                endColumn: position.column,
+              },
+              text: operation.insert,
+            }]);
+            index += operation.insert.length;
+          } else if (operation.delete !== undefined) {
+            const start = model.getPositionAt(index);
+            const end = model.getPositionAt(index + operation.delete);
+            model.applyEdits([{
+              range: {
+                startLineNumber: start.lineNumber,
+                startColumn: start.column,
+                endLineNumber: end.lineNumber,
+                endColumn: end.column,
+              },
+              text: "",
+            }]);
+          }
+        });
+      } finally {
+        applyingRemoteUpdate = false;
+      }
+    };
+
+    source.observe(handleSharedTextChange);
+    const modelSubscription = model.onDidChangeContent(handleModelChange);
+    bindingRef.current = () => {
+      source.unobserve(handleSharedTextChange);
+      modelSubscription.dispose();
+    };
   };
 
   const handleLanguageChange = (e) => {
@@ -123,10 +248,7 @@ const App = () => {
       <>
         <div className="join-container">
           <div className="join-form">
-            <h1>Collaborative Editor</h1>
-            <p className="demo-notice">
-              Demo rooms are open to anyone who knows the room name. Do not share private code.
-            </p>
+            <h1>Collaborative IDE</h1>
             <input
               type="text"
               placeholder="Room"
@@ -153,9 +275,6 @@ const App = () => {
       <div className="sidebar">
         <div className="room-info">
           <h2>Room: {roomId}</h2>
-          <p className="demo-notice">
-            Room names are not private. Simultaneous edits may overwrite each other.
-          </p>
         </div>
         <h3>Users</h3>
         <ul>
@@ -191,8 +310,7 @@ const App = () => {
           height={"60%"}
           defaultLanguage={language}
           language={language}
-          value={code}
-          onChange={handleCodeChange}
+          onMount={handleEditorMount}
           theme="vs-dark"
           options={{
             minimap: { enabled: false },

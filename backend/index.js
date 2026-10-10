@@ -4,8 +4,8 @@ import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 import { mkdirSync } from "fs";
-import axios from "axios";
 import Database from "better-sqlite3";
+import * as Y from "yjs";
 
 const app = express();
 
@@ -60,6 +60,20 @@ const saveLanguage = database.prepare(`
     updated_at = CURRENT_TIMESTAMP
 `);
 
+const createRoom = (savedDocument) => {
+  const doc = new Y.Doc();
+  const source = doc.getText("source");
+  if (savedDocument?.code) {
+    source.insert(0, savedDocument.code);
+  }
+
+  return {
+    users: new Set(),
+    doc,
+    language: savedDocument?.language ?? "javascript",
+  };
+};
+
 io.on("connection", (socket) => {
   console.log("Connected", socket.id);
 
@@ -94,30 +108,41 @@ io.on("connection", (socket) => {
 
     if (!rooms.has(roomId)) {
       const savedDocument = getDocument.get(roomId);
-      rooms.set(roomId, {
-        users: new Set(),
-        code: savedDocument?.code ?? "",
-        language: savedDocument?.language ?? "javascript",
-      });
+      rooms.set(roomId, createRoom(savedDocument));
     }
 
-    rooms.get(roomId).users.add(userName);
+    const room = rooms.get(roomId);
+    room.users.add(userName);
 
-    socket.emit("codeUpdate", rooms.get(roomId).code);
-    socket.emit("languageUpdate", rooms.get(roomId).language);
+    socket.emit("documentState", Y.encodeStateAsUpdate(room.doc));
+    socket.emit("languageUpdate", room.language);
 
     io.to(roomId).emit("userJoined", Array.from(rooms.get(currentRoom).users));
     acknowledge?.({ ok: true });
   });
 
-  socket.on("codeChange", (payload = {}) => {
-    if (!currentRoom || typeof payload.code !== "string" || payload.code.length > 500_000) {
+  socket.on("documentUpdate", (payload = {}) => {
+    const room = currentRoom && rooms.get(currentRoom);
+    if (
+      !room ||
+      !(payload.update instanceof Uint8Array) ||
+      payload.update.byteLength > 750_000
+    ) {
       return;
     }
 
-    rooms.get(currentRoom).code = payload.code;
-    saveDocument.run(currentRoom, payload.code, rooms.get(currentRoom).language);
-    socket.to(currentRoom).emit("codeUpdate", payload.code);
+    try {
+      Y.applyUpdate(room.doc, payload.update);
+    } catch {
+      return;
+    }
+
+    saveDocument.run(
+      currentRoom,
+      room.doc.getText("source").toString(),
+      room.language
+    );
+    socket.to(currentRoom).emit("documentUpdate", payload.update);
   });
 
   socket.on("leaveRoom", () => {
@@ -173,18 +198,23 @@ io.on("connection", (socket) => {
         lastExecutionAt = now;
 
         try {
-          const response = await axios.post(
-            "https://emkc.org/api/v2/piston/execute",
-            {
+          const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
               language,
               version,
               files: [{ content: code }],
               stdin: input,
-            },
-            { timeout: 15_000 }
-          );
+            }),
+            signal: AbortSignal.timeout(15_000),
+          });
 
-          io.to(roomId).emit("codeResponse", response.data);
+          if (!response.ok) {
+            throw new Error(`Piston request failed with status ${response.status}`);
+          }
+
+          io.to(roomId).emit("codeResponse", await response.json());
         } catch {
           socket.emit("executionError", "The code execution service is unavailable. Please try again.");
         }
