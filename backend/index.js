@@ -34,15 +34,29 @@ database.exec(`
   CREATE TABLE IF NOT EXISTS documents (
     room_id TEXT PRIMARY KEY,
     code TEXT NOT NULL DEFAULT '',
+    language TEXT NOT NULL DEFAULT 'javascript',
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )
 `);
-const getDocument = database.prepare("SELECT code FROM documents WHERE room_id = ?");
+const documentColumns = database.pragma("table_info(documents)");
+if (!documentColumns.some((column) => column.name === "language")) {
+  database.exec("ALTER TABLE documents ADD COLUMN language TEXT NOT NULL DEFAULT 'javascript'");
+}
+const getDocument = database.prepare(
+  "SELECT code, language FROM documents WHERE room_id = ?"
+);
 const saveDocument = database.prepare(`
-  INSERT INTO documents (room_id, code, updated_at)
-  VALUES (?, ?, CURRENT_TIMESTAMP)
+  INSERT INTO documents (room_id, code, language, updated_at)
+  VALUES (?, ?, ?, CURRENT_TIMESTAMP)
   ON CONFLICT(room_id) DO UPDATE SET
     code = excluded.code,
+    updated_at = CURRENT_TIMESTAMP
+`);
+const saveLanguage = database.prepare(`
+  INSERT INTO documents (room_id, language)
+  VALUES (?, ?)
+  ON CONFLICT(room_id) DO UPDATE SET
+    language = excluded.language,
     updated_at = CURRENT_TIMESTAMP
 `);
 
@@ -51,6 +65,7 @@ io.on("connection", (socket) => {
 
   let currentRoom = null;
   let currentUser = null;
+  let lastExecutionAt = 0;
 
   socket.on("join", (payload = {}, acknowledge) => {
     const roomId = typeof payload.roomId === "string" ? payload.roomId.trim() : "";
@@ -79,12 +94,17 @@ io.on("connection", (socket) => {
 
     if (!rooms.has(roomId)) {
       const savedDocument = getDocument.get(roomId);
-      rooms.set(roomId, { users: new Set(), code: savedDocument?.code ?? "" });
+      rooms.set(roomId, {
+        users: new Set(),
+        code: savedDocument?.code ?? "",
+        language: savedDocument?.language ?? "javascript",
+      });
     }
 
     rooms.get(roomId).users.add(userName);
 
     socket.emit("codeUpdate", rooms.get(roomId).code);
+    socket.emit("languageUpdate", rooms.get(roomId).language);
 
     io.to(roomId).emit("userJoined", Array.from(rooms.get(currentRoom).users));
     acknowledge?.({ ok: true });
@@ -96,7 +116,7 @@ io.on("connection", (socket) => {
     }
 
     rooms.get(currentRoom).code = payload.code;
-    saveDocument.run(currentRoom, payload.code);
+    saveDocument.run(currentRoom, payload.code, rooms.get(currentRoom).language);
     socket.to(currentRoom).emit("codeUpdate", payload.code);
   });
 
@@ -123,6 +143,9 @@ io.on("connection", (socket) => {
 
   socket.on("languageChange", (payload = {}) => {
     if (currentRoom && allowedLanguages.has(payload.language)) {
+      const room = rooms.get(currentRoom);
+      room.language = payload.language;
+      saveLanguage.run(currentRoom, payload.language);
       io.to(currentRoom).emit("languageUpdate", payload.language);
     }
   });
@@ -141,22 +164,30 @@ io.on("connection", (socket) => {
         typeof input === "string" &&
         input.length <= 100_000
       ) {
-        const response = await axios.post(
-          "https://emkc.org/api/v2/piston/execute",
-          {
-            language,
-            version,
-            files: [
-              {
-                content: code,
-              },
-            ],
-            stdin: input,
-          },
-          { timeout: 15_000 }
-        );
+        const now = Date.now();
+        const cooldownMs = 2_000;
+        if (now - lastExecutionAt < cooldownMs) {
+          socket.emit("executionError", "Please wait a moment before running code again.");
+          return;
+        }
+        lastExecutionAt = now;
 
-        io.to(roomId).emit("codeResponse", response.data);
+        try {
+          const response = await axios.post(
+            "https://emkc.org/api/v2/piston/execute",
+            {
+              language,
+              version,
+              files: [{ content: code }],
+              stdin: input,
+            },
+            { timeout: 15_000 }
+          );
+
+          io.to(roomId).emit("codeResponse", response.data);
+        } catch {
+          socket.emit("executionError", "The code execution service is unavailable. Please try again.");
+        }
       }
     }
   );

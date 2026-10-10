@@ -30,6 +30,14 @@ body {
       color: #333;
     }
 
+    .demo-notice {
+      margin: 0 0 1rem;
+      color: #76531c;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      text-align: left;
+    }
+
     input {
       width: 100%;
       padding: 0.75rem;
@@ -77,6 +85,13 @@ body {
       h2 {
         margin-bottom: 1rem;
         font-size: 1.2rem;
+      }
+
+      .demo-notice {
+        color: #f0cf87;
+        font-size: 0.78rem;
+        line-height: 1.4;
+        text-align: left;
       }
     }
 
@@ -150,6 +165,11 @@ body {
         outline: 2px solid #fff;
         outline-offset: 2px;
       }
+
+      &:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
       
     }
 
@@ -161,6 +181,12 @@ body {
       font-size: 0.8rem;
       color: #bdc3c7;
     }
+  }
+
+  .execution-message {
+    padding: 0.5rem 1rem;
+    color: #8b2c22;
+    font-size: 0.85rem;
   }
 
   .editor-wrapper {

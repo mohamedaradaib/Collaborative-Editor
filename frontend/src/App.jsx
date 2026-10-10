@@ -17,6 +17,8 @@ const App = () => {
   const [users, setUsers] = useState([]);
   const [typing, setTyping] = useState("");
   const [outPut, setOutPut] = useState("");
+  const [executionMessage, setExecutionMessage] = useState("");
+  const [runCooldown, setRunCooldown] = useState(false);
   const version = "*";
   const [joinError, setJoinError] = useState("");
 
@@ -40,7 +42,10 @@ const App = () => {
 
     socket.on("codeResponse", (response) => {
       setOutPut(response.run.output);
+      setExecutionMessage("");
     });
+
+    socket.on("executionError", setExecutionMessage);
 
     return () => {
       socket.off("userJoined");
@@ -48,6 +53,7 @@ const App = () => {
       socket.off("userTyping");
       socket.off("languageUpdate");
       socket.off("codeResponse");
+      socket.off("executionError");
     };
   }, []);
 
@@ -99,6 +105,10 @@ const App = () => {
   const [userInput, setUserInput] = useState("");
 
   const runCode = () => {
+    if (runCooldown) return;
+    setExecutionMessage("");
+    setRunCooldown(true);
+    setTimeout(() => setRunCooldown(false), 2000);
     socket.emit("compileCode", {
       code,
       roomId,
@@ -114,6 +124,9 @@ const App = () => {
         <div className="join-container">
           <div className="join-form">
             <h1>Collaborative Editor</h1>
+            <p className="demo-notice">
+              Demo rooms are open to anyone who knows the room name. Do not share private code.
+            </p>
             <input
               type="text"
               placeholder="Room"
@@ -140,6 +153,9 @@ const App = () => {
       <div className="sidebar">
         <div className="room-info">
           <h2>Room: {roomId}</h2>
+          <p className="demo-notice">
+            Room names are not private. Simultaneous edits may overwrite each other.
+          </p>
         </div>
         <h3>Users</h3>
         <ul>
@@ -157,9 +173,10 @@ const App = () => {
           <option value="python">Python</option>
           <option value="java">Java</option>
         </select>
-        <button className="run-btn" onClick={runCode}>
-          Run
+        <button className="run-btn" onClick={runCode} disabled={runCooldown}>
+          {runCooldown ? "Wait..." : "Run"}
         </button>
+        {executionMessage && <p className="execution-message" role="status">{executionMessage}</p>}
         <button className="leave-button" onClick={leaveRoom}>
           Exit
         </button>
