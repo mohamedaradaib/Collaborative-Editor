@@ -2,7 +2,10 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import path from "path";
+import { fileURLToPath } from "url";
+import { mkdirSync } from "fs";
 import axios from "axios";
+import Database from "better-sqlite3";
 
 const app = express();
 
@@ -15,6 +18,29 @@ const io = new Server(server, {
 });
 
 const rooms = new Map();
+const backendDirectory = path.dirname(fileURLToPath(import.meta.url));
+const databasePath =
+  process.env.DATABASE_PATH ||
+  path.join(backendDirectory, "data", "editor.sqlite");
+mkdirSync(path.dirname(databasePath), { recursive: true });
+
+const database = new Database(databasePath);
+database.pragma("journal_mode = WAL");
+database.exec(`
+  CREATE TABLE IF NOT EXISTS documents (
+    room_id TEXT PRIMARY KEY,
+    code TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+const getDocument = database.prepare("SELECT code FROM documents WHERE room_id = ?");
+const saveDocument = database.prepare(`
+  INSERT INTO documents (room_id, code, updated_at)
+  VALUES (?, ?, CURRENT_TIMESTAMP)
+  ON CONFLICT(room_id) DO UPDATE SET
+    code = excluded.code,
+    updated_at = CURRENT_TIMESTAMP
+`);
 
 io.on("connection", (socket) => {
   console.log("Connected", socket.id);
@@ -38,7 +64,8 @@ io.on("connection", (socket) => {
     socket.join(roomId);
 
     if (!rooms.has(roomId)) {
-      rooms.set(roomId, { users: new Set(), code: "" });
+      const savedDocument = getDocument.get(roomId);
+      rooms.set(roomId, { users: new Set(), code: savedDocument?.code ?? "" });
     }
 
     rooms.get(roomId).users.add(userName);
@@ -51,6 +78,7 @@ io.on("connection", (socket) => {
   socket.on("codeChange", ({ roomId, code }) => {
     if (rooms.has(roomId)) {
       rooms.get(roomId).code = code;
+      saveDocument.run(roomId, code);
     }
     socket.to(roomId).emit("codeUpdate", code);
   });

@@ -17,6 +17,7 @@ A real-time collaborative development environment that allows multiple users to 
 - Vite
 - Node.js
 - Express.js
+- SQLite
 - Socket.IO
 - Monaco Editor
 - Axios
@@ -24,6 +25,8 @@ A real-time collaborative development environment that allows multiple users to 
 
 ## How It Works
 The frontend provides the editor interface, while the backend manages communication between connected clients. When a user joins a room, the server stores that user and broadcasts the current code state to everyone in the room. As code changes are made, they are sent over Socket.IO so all users stay synchronized. The app also supports code execution by sending the current code to an external execution service and returning the output.
+
+Room source code is persisted in a local SQLite database at `backend/data/editor.sqlite`. Set the `DATABASE_PATH` environment variable to use a different database file. Connected users and other live session state remain in memory.
 
 ## Getting Started
 ### Prerequisites
