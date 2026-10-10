@@ -221,12 +221,6 @@ const App = () => {
     };
   };
 
-  const handleLanguageChange = (e) => {
-    const newLanguage = e.target.value;
-    setLanguage(newLanguage);
-    socket.emit("languageChange", { roomId, language: newLanguage });
-  };
-
   const [userInput, setUserInput] = useState("");
 
   const runCode = () => {
@@ -245,33 +239,30 @@ const App = () => {
 
   if (!joined) {
     return (
-      <>
-        <div className="join-container">
-          <div className="join-form">
-            <h1>Collaborative IDE</h1>
-            <input
-              type="text"
-              placeholder="Room"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Username"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-            />
-            {joinError && <p role="alert">{joinError}</p>}
-            <button onClick={joinRoom}>Enter</button>
-          </div>
+      <div className="join-container">
+        <div className="join-form">
+          <h1>Collaborative IDE</h1>
+          <input
+            type="text"
+            placeholder="Room"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Username"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+          />
+          {joinError && <p role="alert">{joinError}</p>}
+          <button onClick={joinRoom}>Enter</button>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="editor-container">
+    <div className="editor-container">
       <div className="sidebar">
         <div className="room-info">
           <h2>Room: {roomId}</h2>
@@ -283,13 +274,7 @@ const App = () => {
           ))}
         </ul>
         <p className="typing-indicator">{typing}</p>
-        <select
-          className="language-selector"
-          value={language}
-          onChange={handleLanguageChange}
-        >
-          <option value="javascript">JavaScript</option>
-        </select>
+        <p className="language-label">{language}</p>
         <button className="run-btn" onClick={runCode} disabled={runCooldown}>
           {runCooldown ? "Wait..." : "Run"}
         </button>
@@ -328,8 +313,7 @@ const App = () => {
           placeholder="Output"
         />
       </div>
-      </div>
-    </>
+    </div>
   );
 };
 

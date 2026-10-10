@@ -30,14 +30,6 @@ body {
       color: #333;
     }
 
-    .demo-notice {
-      margin: 0 0 1rem;
-      color: #76531c;
-      font-size: 0.85rem;
-      line-height: 1.4;
-      text-align: left;
-    }
-
     input {
       width: 100%;
       padding: 0.75rem;
@@ -88,12 +80,6 @@ body {
         font-size: 1.2rem;
       }
 
-      .demo-notice {
-        color: #f0cf87;
-        font-size: 0.78rem;
-        line-height: 1.4;
-        text-align: left;
-      }
     }
 
     h3 {
@@ -118,14 +104,10 @@ body {
       color: white;
     }
 
-    .language-selector {
+    .language-label {
       margin-top: 1rem;
-      width: 100%;
-      padding: 0.5rem;
-      background-color: #34495e;
       color: white;
-      border: none;
-      border-radius: 4px;
+      text-transform: capitalize;
     }
 
     .leave-button {
