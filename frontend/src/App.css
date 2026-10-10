@@ -61,6 +61,7 @@ body {
 .editor-container {
   display: flex;
   height: 100vh;
+  overflow: hidden;
 
   .sidebar {
     width: 250px;
@@ -107,7 +108,6 @@ body {
     .language-label {
       margin-top: 1rem;
       color: white;
-      text-transform: capitalize;
     }
 
     .leave-button {
@@ -173,13 +173,23 @@ body {
   }
 
   .editor-wrapper {
-    flex-grow: 1;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
     background-color: #fff;
+
+    > :first-child {
+      flex: 1 1 0;
+      min-height: 0;
+    }
   }
 }
 
 .output-console {
   width: 100%;
+  flex: 0 0 200px;
   margin-top: 10px;
   padding: 10px;
   font-size: 20px;
@@ -193,6 +203,7 @@ body {
 
 .input-console {
   width: 100%;
+  flex: 0 0 80px;
   height: 80px;
   margin-top: 10px;
   padding: 10px;

@@ -6,7 +6,7 @@ A browser-based collaborative code editor where multiple users can join a room a
 - Real-time collaborative editing with concurrent changes merged automatically
 - Room-based sessions with active user presence and typing indicators
 - Shared JavaScript editor with code execution, standard input, and output
-- Persistent room source code and language settings
+- Persistent room source code
 
 ## Tech Stack
 - JavaScript
@@ -23,7 +23,7 @@ A browser-based collaborative code editor where multiple users can join a room a
 - Piston API
 
 ## How It Works
-The frontend binds Monaco Editor to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates, language settings, and room presence between connected users. The backend stores each room's source code and language in SQLite. When a user runs code, the backend sends the JavaScript source and standard input to the external Piston service and broadcasts the result to the room. Code execution is limited to one run every two seconds per connected client. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive code, and only deploy this application where you trust the users who can access it.
+The frontend binds Monaco Editor to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates and room presence between connected users. The backend stores each room's JavaScript source code in SQLite and sends it with standard input to the external Piston service when a user runs the code. Results are broadcast to the room. Code execution is limited to one run every two seconds per connected client. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive code, and only deploy this application where you trust the users who can access it.
 
 ## Getting Started
 ### Prerequisites

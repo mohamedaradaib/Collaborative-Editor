@@ -274,7 +274,7 @@ const App = () => {
           ))}
         </ul>
         <p className="typing-indicator">{typing}</p>
-        <p className="language-label">{language}</p>
+        <p className="language-label">JavaScript</p>
         <button className="run-btn" onClick={runCode} disabled={runCooldown}>
           {runCooldown ? "Wait..." : "Run"}
         </button>
@@ -291,8 +291,8 @@ const App = () => {
       <div className="editor-wrapper">
         <Editor
           height={"60%"}
-          defaultLanguage={language}
-          language={language}
+          defaultLanguage="javascript"
+          language="javascript"
           onMount={handleEditorMount}
           theme="vs-dark"
           options={{

@@ -22,6 +22,8 @@ const io = new Server(server, {
 
 const rooms = new Map();
 const allowedLanguages = new Set(["javascript"]);
+const pistonExecuteUrl =
+  process.env.PISTON_API_URL || "https://emkc.org/api/v2/piston/execute";
 const backendDirectory = path.dirname(fileURLToPath(import.meta.url));
 const databasePath =
   process.env.DATABASE_PATH ||
@@ -200,7 +202,7 @@ io.on("connection", (socket) => {
         lastExecutionAt = now;
 
         try {
-          const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+          const response = await fetch(pistonExecuteUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
