@@ -61,6 +61,8 @@ Open `http://localhost:5173`
 
 ## Live Demo
 
+## Screenshots
+
 ## License
 [LICENSE](./LICENSE)
 
