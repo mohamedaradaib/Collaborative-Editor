@@ -60,7 +60,7 @@ npm --prefix frontend run dev -- --host 0.0.0.0
 Open `http://localhost:5173`
 
 ## Live Demo
-[collaborative-ide-production.up.railway.app](https://collaborative-ide-production.up.railway.app/)
+[https://collaborative-ide-production.up.railway.app/](https://collaborative-ide-production.up.railway.app/)
 
 ## Screenshots 
  
