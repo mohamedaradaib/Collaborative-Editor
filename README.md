@@ -66,4 +66,3 @@ Open `http://localhost:5173`
  
 ## License
 [LICENSE](./LICENSE)
-
