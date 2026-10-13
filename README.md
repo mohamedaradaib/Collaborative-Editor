@@ -1,6 +1,6 @@
-# Collaborative IDE
+# Collaborative Editor
 
-A browser-based collaborative coding platform where multiple users can join a room and work on the same code in real time.
+A browser-based collaborative editor where multiple users can join a room and work together in real time.
 
 ## Features
 - Real-time collaborative editing with concurrent changes merged automatically
@@ -33,8 +33,8 @@ The frontend binds Monaco Editor to a shared Yjs document. Yjs merges concurrent
 
 1. Clone the repository and install backend dependencies from the project root:
 ```bash
-git clone https://github.com/mohamedaradaib/Collaborative-IDE.git
-cd Collaborative-IDE
+git clone https://github.com/mohamedaradaib/Collaborative-Editor
+cd Collaborative-Editor
 npm install
 ```
 

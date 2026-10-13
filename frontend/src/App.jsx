@@ -241,7 +241,7 @@ const App = () => {
     return (
       <div className="join-container">
         <div className="join-form">
-          <h1>Collaborative IDE</h1>
+          <h1>Collaborative Editor</h1>
           <input
             type="text"
             placeholder="Room"
