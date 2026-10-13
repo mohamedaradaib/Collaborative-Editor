@@ -63,7 +63,7 @@ Open `http://localhost:5173`
 [collaborative-ide-production.up.railway.app](https://collaborative-ide-production.up.railway.app/)
 
 ## Screenshots 
-
+ 
 ## License
 [LICENSE](./LICENSE)
 
