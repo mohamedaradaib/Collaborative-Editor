@@ -1,6 +1,6 @@
 # Collaborative IDE
 
-A browser-based collaborative code editor where multiple users can join a room and work on the same code in real time.
+A browser-based collaborative coding platform where multiple users can join a room and work on the same code in real time.
 
 ## Features
 - Real-time collaborative editing with concurrent changes merged automatically
