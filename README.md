@@ -60,7 +60,6 @@ npm --prefix frontend run dev -- --host 0.0.0.0
 Then open the vite localhost url `http://localhost:5173`
 
 ## Live Demo
-[https://collaborative-editor-production.up.railway.app/](https://collaborative-edit0r-production.up.railway.app/)
 
 ## Screenshots
 
