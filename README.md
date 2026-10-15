@@ -59,11 +59,6 @@ npm --prefix frontend run dev -- --host 0.0.0.0
 
 Then open the vite localhost url `http://localhost:5173`
 
-### Run Tests
-```bash
-npm --prefix frontend test
-```
-
 ## Live Demo
 
 ## Screenshots
