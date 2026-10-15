@@ -33,8 +33,8 @@ The Markdown writing canvas and title are bound to a shared Yjs document. Yjs me
 
 1. Clone the repository and install backend dependencies from the project root:
 ```bash
-git clone https://github.com/mohamedaradaib/Collaborative-Platform
-cd Collaborative-Platform
+git clone https://github.com/mohamedaradaib/Real-Time-Collaborative-Platform
+cd Real-Time-Collaborative-Platform
 npm install
 ```
 
