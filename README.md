@@ -5,8 +5,9 @@ A browser-based collaborative editor where multiple users can join a room and wo
 ## Features
 - Real-time collaborative editing with concurrent changes merged automatically
 - Room-based sessions with active user presence and typing indicators
-- Shared JavaScript editor with code execution, standard input, and output
-- Persistent room source code
+- Markdown writing and rendered preview with GitHub-flavored syntax
+- Shared document titles, save status, word count, and copyable room links
+- Persistent document titles and content for each room
 
 ## Tech Stack
 - JavaScript
@@ -19,11 +20,10 @@ A browser-based collaborative editor where multiple users can join a room and wo
 - SQLite
 - Socket.IO
 - Yjs
-- Monaco Editor
-- Piston API
+- React Markdown
 
 ## How It Works
-The frontend binds Monaco Editor to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates and room presence between connected users. The backend stores each room's JavaScript source code in SQLite and sends it with standard input to the external Piston service when a user runs the code. Results are broadcast to the room. Code execution is limited to one run every two seconds per connected client. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive code, and only deploy this application where you trust the users who can access it.
+The Markdown writing canvas and title are bound to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates and room presence between connected users. The backend stores each room's title and content in SQLite and acknowledges writes so the editor can show save status. Existing rooms are migrated from their saved source code without losing text. Copying a room link includes the room name, which is prefilled for invitees. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive content, and only deploy this application where you trust the users who can access it.
 
 ## Getting Started
 ### Prerequisites
@@ -58,6 +58,11 @@ npm --prefix frontend run dev -- --host 0.0.0.0
 ```
 
 Then open the vite localhost url `http://localhost:5173`
+
+### Run Tests
+```bash
+npm --prefix frontend test
+```
 
 ## Live Demo
 
