@@ -21,9 +21,6 @@ const io = new Server(server, {
 });
 
 const rooms = new Map();
-const allowedLanguages = new Set(["javascript"]);
-const pistonExecuteUrl =
-  process.env.PISTON_API_URL || "https://emkc.org/api/v2/piston/execute";
 const backendDirectory = path.dirname(fileURLToPath(import.meta.url));
 const databasePath =
   process.env.DATABASE_PATH ||
@@ -35,46 +32,45 @@ database.pragma("journal_mode = WAL");
 database.exec(`
   CREATE TABLE IF NOT EXISTS documents (
     room_id TEXT PRIMARY KEY,
-    code TEXT NOT NULL DEFAULT '',
-    language TEXT NOT NULL DEFAULT 'javascript',
+    title TEXT NOT NULL DEFAULT 'Untitled document',
+    content TEXT NOT NULL DEFAULT '',
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )
 `);
 const documentColumns = database.pragma("table_info(documents)");
-if (!documentColumns.some((column) => column.name === "language")) {
-  database.exec("ALTER TABLE documents ADD COLUMN language TEXT NOT NULL DEFAULT 'javascript'");
+if (!documentColumns.some((column) => column.name === "content")) {
+  database.exec("ALTER TABLE documents ADD COLUMN content TEXT NOT NULL DEFAULT ''");
+  if (documentColumns.some((column) => column.name === "code")) {
+    database.exec("UPDATE documents SET content = code");
+  }
+}
+if (!documentColumns.some((column) => column.name === "title")) {
+  database.exec("ALTER TABLE documents ADD COLUMN title TEXT NOT NULL DEFAULT 'Untitled document'");
+  database.exec("UPDATE documents SET title = room_id");
 }
 const getDocument = database.prepare(
-  "SELECT code, language FROM documents WHERE room_id = ?"
+  "SELECT title, content FROM documents WHERE room_id = ?"
 );
 const saveDocument = database.prepare(`
-  INSERT INTO documents (room_id, code, language, updated_at)
+  INSERT INTO documents (room_id, title, content, updated_at)
   VALUES (?, ?, ?, CURRENT_TIMESTAMP)
   ON CONFLICT(room_id) DO UPDATE SET
-    code = excluded.code,
+    title = excluded.title,
+    content = excluded.content,
     updated_at = CURRENT_TIMESTAMP
 `);
-const saveLanguage = database.prepare(`
-  INSERT INTO documents (room_id, language)
-  VALUES (?, ?)
-  ON CONFLICT(room_id) DO UPDATE SET
-    language = excluded.language,
-    updated_at = CURRENT_TIMESTAMP
-`);
-
-const createRoom = (savedDocument) => {
+const createRoom = (savedDocument, roomId) => {
   const doc = new Y.Doc();
+  const title = doc.getText("title");
   const source = doc.getText("source");
-  if (savedDocument?.code) {
-    source.insert(0, savedDocument.code);
+  title.insert(0, savedDocument?.title || roomId);
+  if (savedDocument?.content) {
+    source.insert(0, savedDocument.content);
   }
 
   return {
     users: new Set(),
     doc,
-    language: allowedLanguages.has(savedDocument?.language)
-      ? savedDocument.language
-      : "javascript",
   };
 };
 
@@ -83,7 +79,6 @@ io.on("connection", (socket) => {
 
   let currentRoom = null;
   let currentUser = null;
-  let lastExecutionAt = 0;
 
   socket.on("join", (payload = {}, acknowledge) => {
     const roomId = typeof payload.roomId === "string" ? payload.roomId.trim() : "";
@@ -112,40 +107,42 @@ io.on("connection", (socket) => {
 
     if (!rooms.has(roomId)) {
       const savedDocument = getDocument.get(roomId);
-      rooms.set(roomId, createRoom(savedDocument));
+      rooms.set(roomId, createRoom(savedDocument, roomId));
     }
 
     const room = rooms.get(roomId);
     room.users.add(userName);
 
     socket.emit("documentState", Y.encodeStateAsUpdate(room.doc));
-    socket.emit("languageUpdate", room.language);
 
     io.to(roomId).emit("userJoined", Array.from(rooms.get(currentRoom).users));
     acknowledge?.({ ok: true });
   });
 
-  socket.on("documentUpdate", (payload = {}) => {
+  socket.on("documentUpdate", (payload = {}, acknowledge) => {
     const room = currentRoom && rooms.get(currentRoom);
     if (
       !room ||
       !(payload.update instanceof Uint8Array) ||
       payload.update.byteLength > 750_000
     ) {
+      acknowledge?.({ ok: false });
       return;
     }
 
     try {
       Y.applyUpdate(room.doc, payload.update);
     } catch {
+      acknowledge?.({ ok: false });
       return;
     }
 
     saveDocument.run(
       currentRoom,
-      room.doc.getText("source").toString(),
-      room.language
+      room.doc.getText("title").toString(),
+      room.doc.getText("source").toString()
     );
+    acknowledge?.({ ok: true });
     socket.to(currentRoom).emit("documentUpdate", payload.update);
   });
 
@@ -169,62 +166,6 @@ io.on("connection", (socket) => {
       socket.to(currentRoom).emit("userTyping", currentUser);
     }
   });
-
-  socket.on("languageChange", (payload = {}) => {
-    if (currentRoom && allowedLanguages.has(payload.language)) {
-      const room = rooms.get(currentRoom);
-      room.language = payload.language;
-      saveLanguage.run(currentRoom, payload.language);
-      io.to(currentRoom).emit("languageUpdate", payload.language);
-    }
-  });
-
-  socket.on(
-    "compileCode",
-    async (payload = {}) => {
-      const { code, language, version, input } = payload;
-      const roomId = currentRoom;
-      if (
-        roomId &&
-        typeof code === "string" &&
-        code.length <= 100_000 &&
-        allowedLanguages.has(language) &&
-        typeof version === "string" &&
-        typeof input === "string" &&
-        input.length <= 100_000
-      ) {
-        const now = Date.now();
-        const cooldownMs = 2_000;
-        if (now - lastExecutionAt < cooldownMs) {
-          socket.emit("executionError", "Please wait a moment before running code again.");
-          return;
-        }
-        lastExecutionAt = now;
-
-        try {
-          const response = await fetch(pistonExecuteUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              language,
-              version,
-              files: [{ content: code }],
-              stdin: input,
-            }),
-            signal: AbortSignal.timeout(15_000),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Piston request failed with status ${response.status}`);
-          }
-
-          io.to(roomId).emit("codeResponse", await response.json());
-        } catch {
-          socket.emit("executionError", "The code execution service is unavailable. Please try again.");
-        }
-      }
-    }
-  );
 
   socket.on("disconnect", () => {
     if (currentRoom && currentUser) {
