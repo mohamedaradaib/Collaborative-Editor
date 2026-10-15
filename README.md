@@ -1,9 +1,9 @@
-# Collaborative Editor
+# Collaborative Platform
 
-A browser-based collaborative editor where multiple users can join a room and work together in real time.
+Real time browser-based collaborative platform where multiple users can join a room and text, edit, and review documents together in real time.
 
 ## Features
-- Real-time collaborative editing with concurrent changes merged automatically
+- Real-time collaborative workspace with concurrent changes merged automatically
 - Room-based sessions with active user presence and typing indicators
 - Markdown writing and rendered preview with GitHub-flavored syntax
 - Shared document titles, save status, word count, and copyable room links
@@ -33,8 +33,8 @@ The Markdown writing canvas and title are bound to a shared Yjs document. Yjs me
 
 1. Clone the repository and install backend dependencies from the project root:
 ```bash
-git clone https://github.com/mohamedaradaib/Collaborative-Editor
-cd Collaborative-Editor
+git clone https://github.com/mohamedaradaib/Collaborative-Platform
+cd Collaborative-Platform
 npm install
 ```
 
