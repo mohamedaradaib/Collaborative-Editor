@@ -1,4 +1,4 @@
-# Collaborative Platform
+# Real-Time Collaborative Platform
 
 Real time browser-based collaborative platform where multiple users can join a room and text, edit, and review documents together in real time.
 
