@@ -30,63 +30,161 @@ button {
 }
 
 .join-container {
-  display: flex;
-  height: 100vh;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  grid-template-rows: auto 1fr auto;
+  padding: 24px 5vw 18px;
+  overflow: hidden;
   background: radial-gradient(circle at top left, #1f3b55 0%, #101820 55%, #081018 100%);
+  color: #ecf0f1;
 }
 
-.join-form {
-  width: 300px;
-  padding: 2rem;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.join-topbar,
+.join-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
+.join-topbar {
+  min-height: 40px;
+}
+
+.join-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #ecf0f1;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.join-footer {
+  color: #888;
+  font-size: 0.72rem;
+}
+
+.join-content {
+  position: relative;
+  display: grid;
+  width: min(1080px, 100%);
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.75fr);
+  align-items: center;
+  gap: 72px;
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+.join-intro {
+  min-width: 0;
+  animation: arrive 500ms ease both;
+}
+
+.join-kicker,
+.join-form .eyebrow {
+  margin-bottom: 18px;
+  color: #83b9f5;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.join-title {
+  max-width: 620px;
+  color: #ecf0f1;
+  font-family: "Roboto", sans-serif;
+  font-size: 3.75rem;
+  font-weight: 500;
+  line-height: 1.08;
+}
+
+.join-form {
+  width: 100%;
+  padding: 32px;
+  border: 1px solid #d5d5d5;
+  border-radius: 4px;
+  background: #fff;
+  text-align: left;
+  animation: arrive 500ms 100ms ease both;
+}
+
 .eyebrow {
-  color: #bdc3c7;
+  color: #c4c4c4;
   font-size: 0.75rem;
 }
 
 .join-form .eyebrow {
-  display: none;
+  margin-bottom: 9px;
 }
 
-.join-form h1 {
-  margin-bottom: 1.5rem;
-  color: #333;
+.join-form h2 {
+  margin-bottom: 28px;
+  color: #252525;
+  font-family: "Roboto", sans-serif;
+  font-size: 1.8rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.join-form label {
+  display: block;
+  margin: 0 0 7px;
+  color: #454545;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .join-form input {
   width: 100%;
-  margin-bottom: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
+  min-height: 46px;
+  margin-bottom: 19px;
+  padding: 0 12px;
+  border: 1px solid #c7cdd2;
+  border-radius: 2px;
+  background: #fff;
+  color: #222;
+  font-size: 0.9rem;
 }
 
 .join-form input:focus {
   border-color: #4a90e2;
-  outline: 2px solid rgba(74, 144, 226, 0.15);
+  outline: 3px solid rgba(74, 144, 226, 0.2);
 }
 
 .join-form button,
 .leave-button {
   border: 0;
-  border-radius: 2px;
+  border-radius: 3px;
   transition: background 150ms ease, color 150ms ease;
 }
 
 .join-form button {
+  display: flex;
   width: 100%;
-  padding: 0.75rem;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
   background: #4a90e2;
-  color: white;
-  font-size: 1rem;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .join-form button:hover {
@@ -94,14 +192,24 @@ button {
 }
 
 .join-form [role="alert"] {
-  margin: 4px 0 12px;
+  margin: -8px 0 14px;
   color: #a33c2b;
-  font-size: 0.88rem;
+  font-size: 0.84rem;
+}
+
+.join-footer {
+  min-height: 30px;
+  margin: 0 -5vw -18px;
+  padding: 0 24px;
+  border-top: 1px solid #303030;
+  background: #171717;
 }
 
 .editor-container {
-  display: flex;
+  display: grid;
   height: 100vh;
+  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 30px;
   overflow: hidden;
   background: #f0f2f5;
 }
@@ -110,7 +218,7 @@ button {
   display: flex;
   flex: 0 0 250px;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 0;
   padding: 1.5rem;
   background: #1f3b55;
   color: #ecf0f1;
@@ -175,32 +283,19 @@ button {
 .user-list li {
   display: flex;
   align-items: center;
-  gap: 8px;
   min-width: 0;
   margin-top: 5px;
   padding: 0.5rem;
   border-radius: 5px;
-  background: gray;
+  background: #315b77;
   color: #fff;
   font-size: 0.9rem;
 }
 
-.user-list li > span:nth-child(2) {
+.user-list li > span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.user-avatar {
-  display: grid;
-  flex: 0 0 24px;
-  width: 24px;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 50%;
-  color: #fff;
-  font-size: 0.72rem;
 }
 
 .you-label {
@@ -231,10 +326,9 @@ button {
 
 .editor-wrapper {
   display: flex;
-  flex: 1;
   flex-direction: column;
   min-width: 0;
-  min-height: 100vh;
+  min-height: 0;
 }
 
 .document-toolbar {
@@ -250,11 +344,6 @@ button {
 
 .document-heading {
   min-width: 0;
-}
-
-.document-toolbar .eyebrow {
-  margin-bottom: 4px;
-  color: #666;
 }
 
 .document-title-input {
@@ -391,6 +480,7 @@ button {
 
 .markdown-preview a {
   color: #83b9f5;
+  text-decoration: underline;
 }
 
 .markdown-preview blockquote {
@@ -447,14 +537,65 @@ button {
   font-size: 0.8rem;
 }
 
+.app-footer {
+  display: flex;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 24px;
+  border-top: 1px solid #303030;
+  background: #171717;
+  color: #888;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
 @keyframes arrive {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@media (max-width: 760px) {
+  .join-container {
+    padding: 18px 20px 14px;
+  }
+
+  .join-footer {
+    margin: 0 -20px -14px;
+  }
+
+  .join-content {
+    width: min(560px, 100%);
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 56px 0 44px;
+  }
+
+  .join-title {
+    font-size: 2.75rem;
+  }
+
+  .join-form {
+    padding: 24px;
+  }
+
+  .join-form h2 {
+    margin-bottom: 20px;
+  }
+}
+
 @media (max-width: 680px) {
+  .join-footer {
+    gap: 12px;
+    padding: 0 14px;
+  }
+
   .editor-container {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) 30px;
   }
 
   .sidebar {
@@ -525,6 +666,10 @@ button {
     min-height: 0;
     margin: 0;
     padding: 10px 14px 0;
+  }
+
+  .app-footer {
+    padding: 0 14px;
   }
 
   .document-canvas {

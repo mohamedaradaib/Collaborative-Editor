@@ -21,6 +21,8 @@ const io = new Server(server, {
 });
 
 const rooms = new Map();
+const defaultDocumentContent = "Start writing your document here.";
+const previousDefaultDocumentContent = 'print("Hi")';
 const backendDirectory = path.dirname(fileURLToPath(import.meta.url));
 const databasePath =
   process.env.DATABASE_PATH ||
@@ -48,6 +50,16 @@ if (!documentColumns.some((column) => column.name === "title")) {
   database.exec("ALTER TABLE documents ADD COLUMN title TEXT NOT NULL DEFAULT 'Untitled document'");
   database.exec("UPDATE documents SET title = room_id");
 }
+database.prepare(`
+  UPDATE documents
+  SET content = ? || substr(content, length(?) + 1)
+  WHERE substr(content, 1, length(?)) = ?
+`).run(
+  defaultDocumentContent,
+  previousDefaultDocumentContent,
+  previousDefaultDocumentContent,
+  previousDefaultDocumentContent
+);
 const getDocument = database.prepare(
   "SELECT title, content FROM documents WHERE room_id = ?"
 );
@@ -64,9 +76,7 @@ const createRoom = (savedDocument, roomId) => {
   const title = doc.getText("title");
   const source = doc.getText("source");
   title.insert(0, savedDocument?.title || roomId);
-  if (savedDocument?.content) {
-    source.insert(0, savedDocument.content);
-  }
+  source.insert(0, savedDocument?.content || defaultDocumentContent);
 
   return {
     users: new Set(),

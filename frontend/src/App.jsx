@@ -193,26 +193,51 @@ const App = () => {
   if (!joined) {
     return (
       <div className="join-container">
-        <div className="join-form">
-          <p className="eyebrow">A shared space to write</p>
-          <h1>Collaborative Editor</h1>
-          <input
-            type="text"
-            placeholder="Document room"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value)}
-            aria-label="Document room"
-          />
-          <input
-            type="text"
-            placeholder="Your name"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            aria-label="Your name"
-          />
-          {joinError && <p role="alert">{joinError}</p>}
-          <button onClick={joinRoom}>Open document</button>
-        </div>
+        <header className="join-topbar">
+          <a className="join-brand" href="/" aria-label="Real-Time Collaborative Platform home">
+            <span>Real-Time Collaborative Platform</span>
+          </a>
+        </header>
+
+        <main className="join-content">
+          <section className="join-intro" aria-labelledby="join-title">
+            <h1 id="join-title" className="join-title">Modern writing,<br />powered by Markdown.</h1>
+          </section>
+
+          <form
+            className="join-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              joinRoom();
+            }}
+          >
+            <h2>Enter a room</h2>
+            <label className="visually-hidden" htmlFor="room-name">Room name</label>
+            <input
+              id="room-name"
+              type="text"
+              placeholder="Room name"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              autoComplete="off"
+            />
+            <label className="visually-hidden" htmlFor="user-name">Your name</label>
+            <input
+              id="user-name"
+              type="text"
+              placeholder="Your name"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              autoComplete="name"
+            />
+            {joinError && <p role="alert">{joinError}</p>}
+            <button type="submit">Enter</button>
+          </form>
+        </main>
+
+        <footer className="join-footer">
+          <span>© 2026 Real-Time Collaborative Platform | About | Terms of Service | Privacy Policy | Security | Disclosure</span>
+        </footer>
       </div>
     );
   }
@@ -234,20 +259,18 @@ const App = () => {
         <ul className="user-list">
           {users.map((user, index) => (
             <li key={`${user}-${index}`}>
-              <span className="user-avatar" aria-hidden="true">{user.charAt(0).toUpperCase()}</span>
               <span>{user}</span>
               {user === userName && <span className="you-label">you</span>}
             </li>
           ))}
         </ul>
         <p className="typing-indicator" aria-live="polite">{typing}</p>
-        <button className="leave-button" onClick={leaveRoom}>Leave document</button>
+        <button className="leave-button" onClick={leaveRoom}>Exit</button>
       </div>
 
       <div className="editor-wrapper">
         <header className="document-toolbar">
           <div className="document-heading">
-            <p className="eyebrow">LIVE DOCUMENT</p>
             <input
               className="document-title-input"
               value={title}
@@ -302,6 +325,9 @@ const App = () => {
           </footer>
         </main>
       </div>
+      <footer className="app-footer">
+        <span>© 2026 Real-Time Collaborative Platform | About | Terms of Service | Privacy Policy | Security | Disclosure</span>
+      </footer>
     </div>
   );
 };
