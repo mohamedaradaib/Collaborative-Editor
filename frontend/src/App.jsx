@@ -201,7 +201,11 @@ const App = () => {
 
         <main className="join-content">
           <section className="join-intro" aria-labelledby="join-title">
-            <h1 id="join-title" className="join-title">Modern writing,<br />powered by Markdown.</h1>
+            <h1 id="join-title" className="join-title">
+              A modern way to write
+              <br />
+              documents.
+            </h1>
           </section>
 
           <form
@@ -212,20 +216,20 @@ const App = () => {
             }}
           >
             <h2>Enter a room</h2>
-            <label className="visually-hidden" htmlFor="room-name">Room name</label>
+            <label className="visually-hidden" htmlFor="room-name">Room</label>
             <input
               id="room-name"
               type="text"
-              placeholder="Room name"
+              placeholder="Room"
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}
               autoComplete="off"
             />
-            <label className="visually-hidden" htmlFor="user-name">Your name</label>
+            <label className="visually-hidden" htmlFor="user-name">Name</label>
             <input
               id="user-name"
               type="text"
-              placeholder="Your name"
+              placeholder="Name"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               autoComplete="name"
