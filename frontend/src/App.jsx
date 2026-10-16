@@ -197,6 +197,9 @@ const App = () => {
           <a className="join-brand" href="/" aria-label="Real-Time Collaborative Platform home">
             <span>Real-Time Collaborative Platform</span>
           </a>
+          <a className="join-contact" href="">
+            Contact
+          </a>
         </header>
 
         <main className="join-content">
@@ -215,7 +218,7 @@ const App = () => {
               joinRoom();
             }}
           >
-            <h2>Enter a room</h2>
+            <h2>Enter room</h2>
             <label className="visually-hidden" htmlFor="room-name">Room</label>
             <input
               id="room-name"
@@ -317,7 +320,7 @@ const App = () => {
               className="document-canvas"
               value={content}
               onChange={handleContentChange}
-              placeholder="Start writing in Markdown..."
+              placeholder="Begin writing the Document..."
               aria-label="Shared document content"
               spellCheck="true"
               disabled={!documentReady}
