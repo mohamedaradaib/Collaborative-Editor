@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import "./App.css";
 import io from "socket.io-client";
 import * as Y from "yjs";
@@ -10,6 +11,97 @@ const socketUrl =
   import.meta.env.VITE_SERVER_URL ||
   (import.meta.env.DEV ? "http://localhost:5000" : window.location.origin);
 const socket = io(socketUrl);
+const cursorColors = ["#d1495b", "#2878b5", "#2a9d8f", "#a568c5", "#c87900"];
+
+const getCursorColor = (socketId) => {
+  let hash = 0;
+  for (const character of socketId) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+  return cursorColors[hash % cursorColors.length];
+};
+
+const renderCursorOverlay = ({ content, cursors, sharedDoc, localSocketId, contentRef }) => {
+  const source = sharedDoc?.getText("source");
+  if (!source) return null;
+
+  const resolvedCursors = cursors.flatMap((cursor) => {
+    if (cursor.socketId === localSocketId) return [];
+
+    try {
+      const anchorBytes = normalizeYjsUpdate(cursor.anchor);
+      const headBytes = normalizeYjsUpdate(cursor.head);
+      if (!anchorBytes || !headBytes) return [];
+
+      const anchor = Y.createAbsolutePositionFromRelativePosition(
+        Y.decodeRelativePosition(anchorBytes),
+        sharedDoc
+      );
+      const head = Y.createAbsolutePositionFromRelativePosition(
+        Y.decodeRelativePosition(headBytes),
+        sharedDoc
+      );
+      if (!anchor || !head || anchor.type !== source || head.type !== source) return [];
+
+      const start = Math.min(anchor.index, head.index);
+      const end = Math.max(anchor.index, head.index);
+      return [{
+        socketId: cursor.socketId,
+        userName: cursor.userName,
+        color: getCursorColor(cursor.socketId),
+        start,
+        end,
+        head: head.index,
+      }];
+    } catch {
+      return [];
+    }
+  });
+
+  const boundaries = new Set([0, content.length]);
+  for (const cursor of resolvedCursors) {
+    boundaries.add(cursor.start);
+    boundaries.add(cursor.end);
+    boundaries.add(cursor.head);
+  }
+  const points = Array.from(boundaries).sort((left, right) => left - right);
+
+  return (
+    <div className="cursor-overlay" aria-hidden="true">
+      <div className="cursor-overlay-content" ref={contentRef}>
+        {points.map((point, index) => {
+          const markers = resolvedCursors.filter((cursor) => cursor.head === point);
+          const nextPoint = points[index + 1];
+          const segment = nextPoint === undefined ? "" : content.slice(point, nextPoint);
+          const selection = resolvedCursors.find(
+            (cursor) => cursor.start < nextPoint && cursor.end > point
+          );
+
+          return (
+            <span className="cursor-overlay-segment" key={point}>
+              {markers.map((cursor) => (
+                <span
+                  className="remote-cursor"
+                  key={cursor.socketId}
+                  style={{ "--cursor-color": cursor.color }}
+                >
+                  <span className="remote-cursor-label">{cursor.userName}</span>
+                </span>
+              ))}
+              {segment && (
+                <span
+                  style={selection ? { backgroundColor: `${selection.color}35` } : undefined}
+                >
+                  {segment}
+                </span>
+              )}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const App = () => {
   const [joined, setJoined] = useState(false);
@@ -21,6 +113,7 @@ const App = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [users, setUsers] = useState([]);
+  const [remoteCursors, setRemoteCursors] = useState([]);
   const [typing, setTyping] = useState("");
   const [joinError, setJoinError] = useState("");
   const [isPreview, setIsPreview] = useState(false);
@@ -30,6 +123,7 @@ const App = () => {
   const textObserverRef = useRef(null);
   const titleObserverRef = useRef(null);
   const updateHandlerRef = useRef(null);
+  const cursorOverlayRef = useRef(null);
   const saveSequenceRef = useRef(0);
 
   useEffect(() => {
@@ -52,6 +146,24 @@ const App = () => {
     socket.on("documentState", applyDocumentUpdate);
     socket.on("documentUpdate", applyDocumentUpdate);
 
+    const applyCursorUpdate = (cursor) => {
+      if (!cursor?.socketId) return;
+      setRemoteCursors((current) => [
+        ...current.filter((entry) => entry.socketId !== cursor.socketId),
+        cursor,
+      ]);
+    };
+    const applyCursorState = (cursors) => {
+      setRemoteCursors(Array.isArray(cursors) ? cursors : []);
+    };
+    const removeCursor = (socketId) => {
+      setRemoteCursors((current) => current.filter((cursor) => cursor.socketId !== socketId));
+    };
+
+    socket.on("cursorState", applyCursorState);
+    socket.on("cursorUpdate", applyCursorUpdate);
+    socket.on("cursorLeft", removeCursor);
+
     socket.on("userTyping", (user) => {
       setTyping(`${user.slice(0, 8)}... is Typing`);
       setTimeout(() => setTyping(""), 2000);
@@ -61,6 +173,9 @@ const App = () => {
       socket.off("userJoined");
       socket.off("documentState", applyDocumentUpdate);
       socket.off("documentUpdate", applyDocumentUpdate);
+      socket.off("cursorState", applyCursorState);
+      socket.off("cursorUpdate", applyCursorUpdate);
+      socket.off("cursorLeft", removeCursor);
       socket.off("userTyping");
     };
   }, []);
@@ -158,6 +273,7 @@ const App = () => {
     setDocumentReady(false);
     setRoomId("");
     setUserName("");
+    setRemoteCursors([]);
     setTitle("");
     setContent("");
     setIsPreview(false);
@@ -168,6 +284,68 @@ const App = () => {
   const handleContentChange = (event) => {
     if (ydocRef.current) {
       replaceSharedText(ydocRef.current, "source", event.target.value);
+      emitCursorUpdate(event.target.selectionStart, event.target.selectionEnd);
+    }
+  };
+
+  const emitCursorUpdate = (anchorIndex, headIndex) => {
+    const sharedDoc = ydocRef.current;
+    if (!sharedDoc || !documentReady) return;
+
+    const source = sharedDoc.getText("source");
+    const anchor = Y.createRelativePositionFromTypeIndex(
+      source,
+      Math.min(anchorIndex, source.length)
+    );
+    const head = Y.createRelativePositionFromTypeIndex(
+      source,
+      Math.min(headIndex, source.length)
+    );
+    socket.emit("cursorUpdate", {
+      anchor: Y.encodeRelativePosition(anchor),
+      head: Y.encodeRelativePosition(head),
+    });
+  };
+
+  const handleDownloadDocument = () => {
+    const safeTitle = Array.from(title.trim() || roomId, (character) =>
+      character.charCodeAt(0) < 32 || '<>:"/\\|?*'.includes(character)
+        ? "-"
+        : character
+    ).join("").replace(/[. ]+$/g, "");
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    printWindow.opener = null;
+    const documentTitle = safeTitle || "document";
+    const markdownHtml = renderToStaticMarkup(
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+    );
+    printWindow.addEventListener("load", () => {
+      printWindow.focus();
+      printWindow.print();
+    }, { once: true });
+    printWindow.document.write(`<!doctype html>
+      <html><head><meta charset="utf-8"><title>${documentTitle}</title>
+      <style>
+        @page { margin: 20mm; }
+        body { color: #202124; font: 12pt/1.6 Georgia, serif; margin: 0 auto; max-width: 760px; }
+        h1, h2, h3, h4 { font-family: Arial, sans-serif; line-height: 1.25; margin-top: 1.5em; }
+        h1 { border-bottom: 1px solid #d8dadd; padding-bottom: .3em; }
+        a { color: #145a86; }
+        blockquote { border-left: 3px solid #aeb6bd; color: #4d5963; margin-left: 0; padding-left: 1em; }
+        code { background: #f1f3f4; font-family: monospace; padding: .1em .25em; }
+        pre { background: #f1f3f4; overflow-wrap: anywhere; padding: 1em; white-space: pre-wrap; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #b8bec4; padding: .4em .6em; text-align: left; }
+        img { max-width: 100%; }
+      </style></head><body>${markdownHtml}</body></html>`);
+    printWindow.document.close();
+  };
+
+  const handleEditorScroll = (event) => {
+    if (cursorOverlayRef.current) {
+      cursorOverlayRef.current.style.transform = `translateY(-${event.currentTarget.scrollTop}px)`;
     }
   };
 
@@ -205,10 +383,13 @@ const App = () => {
         <main className="join-content">
           <section className="join-intro" aria-labelledby="join-title">
             <h1 id="join-title" className="join-title">
-              A modern way to write
-              <br />
-              documents.
+                A platform for
+                <br />
+                teams to create.
             </h1>
+            <p className="join-description">
+              Online platform where you can write, preview, and save documents with your team.
+            </p>
           </section>
 
           <form
@@ -272,6 +453,13 @@ const App = () => {
           ))}
         </ul>
         <p className="typing-indicator" aria-live="polite">{typing}</p>
+        <button
+          className="download-document-button"
+          onClick={handleDownloadDocument}
+          disabled={!documentReady}
+        >
+          Save as PDF
+        </button>
         <button className="leave-button" onClick={leaveRoom}>Exit</button>
       </div>
 
@@ -313,18 +501,40 @@ const App = () => {
         <main className="document-page">
           {isPreview ? (
             <article className="markdown-preview" aria-label="Markdown preview">
-              {content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : "Nothing to preview yet."}
+              {content ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              ) : (
+                <p className="preview-empty">Nothing to preview yet.</p>
+              )}
             </article>
           ) : (
-            <textarea
-              className="document-canvas"
-              value={content}
-              onChange={handleContentChange}
-              placeholder="Start writing..."
-              aria-label="Shared document content"
-              spellCheck="true"
-              disabled={!documentReady}
-            />
+            <div className="document-editor">
+              {renderCursorOverlay({
+                content,
+                cursors: remoteCursors,
+                sharedDoc: ydocRef.current,
+                localSocketId: socket.id,
+                contentRef: cursorOverlayRef,
+              })}
+              <textarea
+                className="document-canvas"
+                value={content}
+                onChange={handleContentChange}
+                onSelect={(event) => emitCursorUpdate(
+                  event.currentTarget.selectionStart,
+                  event.currentTarget.selectionEnd
+                )}
+                onKeyUp={(event) => emitCursorUpdate(
+                  event.currentTarget.selectionStart,
+                  event.currentTarget.selectionEnd
+                )}
+                onScroll={handleEditorScroll}
+                placeholder="Start writing..."
+                aria-label="Shared document content"
+                spellCheck="true"
+                disabled={!documentReady}
+              />
+            </div>
           )}
           <footer className="document-footer">
             <span>{content.trim() ? content.trim().split(/\s+/).length : 0} words</span>
