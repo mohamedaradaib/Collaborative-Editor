@@ -85,6 +85,7 @@ const createRoom = (savedDocument, roomId) => {
 
   return {
     users: new Set(),
+    cursors: new Map(),
     doc,
   };
 };
@@ -110,7 +111,9 @@ io.on("connection", (socket) => {
       socket.leave(currentRoom);
       const previousRoom = rooms.get(currentRoom);
       previousRoom?.users.delete(currentUser);
+      previousRoom?.cursors.delete(socket.id);
       if (previousRoom) {
+        io.to(currentRoom).emit("cursorLeft", socket.id);
         io.to(currentRoom).emit("userJoined", Array.from(previousRoom.users));
       }
     }
@@ -129,6 +132,7 @@ io.on("connection", (socket) => {
     room.users.add(userName);
 
     socket.emit("documentState", Y.encodeStateAsUpdate(room.doc));
+    socket.emit("cursorState", Array.from(room.cursors.values()));
 
     io.to(roomId).emit("userJoined", Array.from(rooms.get(currentRoom).users));
     acknowledge?.({ ok: true });
@@ -161,37 +165,57 @@ io.on("connection", (socket) => {
     socket.to(currentRoom).emit("documentUpdate", payload.update);
   });
 
-  socket.on("leaveRoom", () => {
-    if (currentRoom && currentUser) {
-      const room = rooms.get(currentRoom);
-      room?.users.delete(currentUser);
-      if (room) {
-        io.to(currentRoom).emit("userJoined", Array.from(room.users));
-      }
-
-      socket.leave(currentRoom);
-
-      currentRoom = null;
-      currentUser = null;
-    }
-  });
-
   socket.on("typing", () => {
     if (currentRoom && currentUser) {
       socket.to(currentRoom).emit("userTyping", currentUser);
     }
   });
 
-  socket.on("disconnect", () => {
-    if (currentRoom && currentUser) {
-      const room = rooms.get(currentRoom);
-      room?.users.delete(currentUser);
-      if (room) {
-        io.to(currentRoom).emit("userJoined", Array.from(room.users));
-      }
+  socket.on("cursorUpdate", (payload = {}) => {
+    const room = currentRoom && rooms.get(currentRoom);
+    const anchor = payload.anchor;
+    const head = payload.head;
+    if (
+      !room ||
+      !(anchor instanceof Uint8Array) ||
+      !(head instanceof Uint8Array) ||
+      anchor.byteLength > 128 ||
+      head.byteLength > 128
+    ) {
+      return;
     }
+
+    const cursor = {
+      socketId: socket.id,
+      userName: currentUser,
+      anchor,
+      head,
+    };
+    room.cursors.set(socket.id, cursor);
+    socket.to(currentRoom).emit("cursorUpdate", cursor);
+  });
+
+  const removePresence = () => {
+    if (!currentRoom || !currentUser) return;
+
+    const room = rooms.get(currentRoom);
+    room?.users.delete(currentUser);
+    room?.cursors.delete(socket.id);
+    if (room) {
+      io.to(currentRoom).emit("cursorLeft", socket.id);
+      io.to(currentRoom).emit("userJoined", Array.from(room.users));
+    }
+    socket.leave(currentRoom);
+    currentRoom = null;
+    currentUser = null;
+  };
+
+  socket.on("disconnect", () => {
+    removePresence();
     console.log("Disconnected", socket.id);
   });
+
+  socket.on("leaveRoom", removePresence);
 });
 
 const port = process.env.PORT || 5000;
