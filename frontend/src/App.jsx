@@ -320,7 +320,7 @@ const App = () => {
               className="document-canvas"
               value={content}
               onChange={handleContentChange}
-              placeholder="Begin writing the Document..."
+              placeholder="Start writing..."
               aria-label="Shared document content"
               spellCheck="true"
               disabled={!documentReady}
