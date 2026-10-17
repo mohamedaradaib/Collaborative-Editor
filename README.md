@@ -4,9 +4,9 @@ Real time browser-based collaborative platform where multiple users can join a r
 
 ## Features
 - Real-time collaborative workspace with concurrent changes merged automatically
-- Room-based sessions with active user presence and typing indicators
+- Room-based sessions with active user presence, typing indicators, live cursors, and selection highlights
 - Markdown writing and rendered preview with GitHub-flavored syntax
-- Shared document titles, save status, word count, and copyable room links
+- Shared document titles, automatic persistence, Markdown downloads, word count, and copyable room links
 - Persistent document titles and content for each room
 
 ## Tech Stack
@@ -23,7 +23,7 @@ Real time browser-based collaborative platform where multiple users can join a r
 - React Markdown
 
 ## How It Works
-The Markdown writing canvas and title are bound to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates and room presence between connected users. The backend stores each room's title and content in SQLite and acknowledges writes so the editor can show save status. Existing rooms are migrated from their saved source code without losing text. Copying a room link includes the room name, which is prefilled for invitees. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive content, and only deploy this application where you trust the users who can access it.
+The Markdown writing canvas and title are bound to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates and room presence between users. Relative cursor positions and selections are broadcast to room members and removed when a user leaves; cursor presence is temporary and is not stored. The backend stores each room's title and content in SQLite and automatically saves edits, acknowledging writes so the editor can show save status. The sidebar can download the current document as a Markdown file. Existing rooms are migrated from their saved source code without losing text. Copying a room link includes the room name, which is prefilled for invitees. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive content, and only deploy this application where you trust the users who can access it.
 
 ## Getting Started
 ### Prerequisites
@@ -66,5 +66,6 @@ Then open the vite localhost url `http://localhost:5173`
 ![alt text](image.png)
 
 ![alt text](image-1.png)
+
 ## License
 [LICENSE](./LICENSE)
